@@ -1,0 +1,516 @@
+% !TEX encoding = windows-1251
+% !TEX program = pdflatex
+\documentclass{beamer}
+\usepackage[english,russian]{babel}
+\usepackage[cp1251]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage{graphicx}
+
+\usepackage{color}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{caption}
+%\usepackage[center]{caption}
+%\usepackage{subfigure}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{subcaption}
+\usepackage{bbm}
+\usepackage{mathrsfs}
+\usepackage{tikz}
+
+\usetikzlibrary{positioning}
+
+\newdimen\nodeSize
+\nodeSize=4mm
+\newdimen\nodeDist
+\nodeDist=6mm
+
+\tikzset{
+    position/.style args={#1:#2 from #3}{
+        at=(#3.#1), anchor=#1+180, shift=(#1:#2)
+    }
+}
+
+\definecolor{darkgreen}{rgb}{0.01, 0.75, 0.24}
+
+\setbeamertemplate{navigation symbols}{}
+
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\D}{D}
+\DeclareMathOperator{\E}{E}
+\newtheorem{theorema}{Теорема}
+\newtheorem{lemm}{Лемма}
+%\captionsetup[figure]{position=top}
+%\usepackage{floatrow}
+% Стиль презентации
+%\usetheme[numbers,totalnumbers]{StatMod}
+\usetheme[numbers,totalnumbers,minimal]{Statmod}
+\DeclareMathOperator*{\argmint}{argmin}
+\DeclareMathOperator*{\argmax}{argmax}
+\newcommand{\R}{\mathbb{R}}
+
+\newcommand{\specialcell}[2][c]{%
+  \begin{tabular}[#1]{@{}c@{}}#2\end{tabular}}
+
+\title[Решающие деревья. Random Forest]{Решающие деревья. Random Forest}  
+\author[В. Попов, Е. Шаповал, Р. Леонович]{\vspace{0.5cm} \\
+             Попов Владимир \\
+             Шаповал Егор\\
+             Леонович Роман 
+              \vspace{1.5cm}}
+%\institute{Санкт-Петербургский государственный университет Прикладная математика и информатика\\ Вычислительная стохастика и статистические модели\\
+% \vspace{0.4cm}
+%    Научный руководитель:   к.ф.-м.н., доцент Алексеева Н. П. \\
+%    Рецензент:  д.ф.-м.н., профессор Кривулин Н. К.
+%    \vspace{0.3cm}}
+    
+\date{Санкт-Петербург\\ 2022 г.} 
+
+\begin{document}
+% Создание заглавной страницы
+%\frame{\titlepage} 
+% Автоматическая генерация содержания
+%\frame{\frametitle{Введение}\tableofcontents} 
+
+%\begin{frame}
+%\begin{tikzpicture}[>=latex,line join=bevel,]
+%%%
+%\node (Moscow) at (5bp,51bp) [draw,ellipse] {Москва};
+%  \node (SPb) at (5bp,5bp) [draw,ellipse] {Санкт-Петербург};
+%  \draw [->] (Moscow) ..controls (5bp,39.554bp) and (5bp,29.067bp)  .. (SPb);
+%%
+%\end{tikzpicture}
+%\end{frame}
+\maketitle
+
+\begin{frame}\frametitle{Бустинг в задаче регрессии}
+	
+	Рассмотрим задачу минимизации квадратичного функционала:
+	
+	$$\dfrac{1}{2}\sum_{i=1}^{l}(a(x_i)-y_i)^2 \rightarrow \underset{a}{min}$$
+	
+	Будем искать итоговый алгоритм в виде суммы базовых моделей $b_n(x)$:
+	
+	$$a_N(x) = \sum_{n=1}^{N}b_n(x),$$где базовые алгоритмы $b_n \in \mathbf{A}$.
+	
+	Первый базовый алгоритм: $b_1(x):=  \dfrac{1}{2}\sum_{i=1}^{l}(b_1(x_i)-y_i)^2 \rightarrow \underset{b_1}{min}$.
+	
+	Остатки на каждом объекте:  $s^{(1)}_i = y_i - b_1(x_i)$
+	
+	$b_2(x) := \dfrac{1}{2}\sum_{i=1}^{l}(b(x_i)-s^{(1)}_i)^2 \rightarrow \underset{b_2}{min}$
+	
+	
+	
+\end{frame}
+
+\begin{frame}\frametitle{Бустинг в задаче регрессии}
+	
+	Таким образом, каждый следующий алгоритм тоже будем настраивать на остатки предыдущих:
+	
+	$$s^{(N)}_i = y_i -  \sum\limits_{n=1}^{N-1} b_n(x_i)  = y_i - a_{N-1}(x_i), \quad i=1,\ldots,l$$
+	
+	$$b_N(x):= \dfrac{1}{2}\sum_{i=1}^{l}(b(x_i)-s_i^{(N)})^2 \rightarrow \underset{b_N}{min}$$
+	
+
+	
+\end{frame}
+
+\begin{frame}\frametitle{Пример}
+	
+	\begin{figure}[!ht]
+		\centering
+		\includegraphics[width=0.8\textwidth]{img/example_data.png}
+		\caption{Пример данных}
+		\label{fig:data}
+	\end{figure}
+	
+\end{frame}
+
+\begin{frame}\frametitle{Пример}
+	
+	\begin{figure}[!ht]
+		\centering
+		\includegraphics[width=0.8\textwidth]{img/example_res.png}
+		\caption{Подсчет остатков}
+		\label{fig:res}
+	\end{figure}
+	
+\end{frame}
+
+\begin{frame}\frametitle{Пример}
+	
+	\begin{figure}[!ht]
+		\centering
+		\includegraphics[width=0.8\textwidth]{img/example_tree.png}
+	\end{figure}
+	\begin{figure}[!ht]
+		\centering
+		\includegraphics[width=0.8\textwidth]{img/example_tree_mean.png}
+		\caption{Построение дерева}
+		\label{fig:tree_mean}
+	\end{figure}
+	
+	
+\end{frame}
+
+\begin{frame}\frametitle{Пример}
+	
+	\begin{figure}[!ht]
+		\centering
+		\includegraphics[width=0.8\textwidth]{img/example_tree_step.png}
+		\includegraphics[width=0.8\textwidth]{img/example_tree_step2.png}
+		\includegraphics[width=0.8\textwidth]{img/example_tree_step3.png}
+		\caption{Подсчет остатков}
+		\label{fig:tree_step}
+	\end{figure}
+	
+	
+\end{frame}
+
+\begin{frame}\frametitle{Пример}
+	
+	\begin{figure}[!ht]
+		\centering
+		\includegraphics[width=0.8\textwidth]{img/example_tree_n.png}
+		\caption{Проводим следующие итерации}
+		\label{fig:tree_n}
+	\end{figure}
+	
+	
+\end{frame}
+
+
+
+\begin{frame}\frametitle{Градиентный бустинг}
+	
+	Пусть дана некоторая дифференцируемая функция потерь $L(y, z)$. 
+	
+	Будем строить взвешенную сумму базовых алгоритмов:
+	$$a_N(x) = \sum_{n=0}^{N}\gamma_n b_n(x)$$
+	
+	\textbf{Примеры выбора алгоритма $b_0(x)$:}
+	
+	\begin{enumerate}
+		\item Нулевой: $b_0(x) = 0$.
+		\item Возвращающий самый популярный класс (в задачах классификации):
+		
+		$b_0(x) = \underset{y\in\mathbf{\mathbb{Y}}}{argmax}\sum_{i=1}^{l}[y_i=y]$
+		\item Возвращающий средний ответ (в задачах регрессии):	
+		$b_0(x) = \frac{1}{l}\sum_{i=1}{l}y_i$
+	\end{enumerate}
+	
+\end{frame}
+
+\begin{frame}\frametitle{Градиентный бустинг}
+	
+	Допустим, мы построили композицию $a_{N-1}(x)$ из $N-1$ алгоритма, и хотим выбрать следующий абзовый алгоритм $b_N(x)$ так, чтобы как можно сильнее уменьшить ошибку:
+	
+	$$\sum_{i=1}^{l} L\left(y_i,a_{N-1}(x_i) + \gamma_N b_N(x_i)\right)\rightarrow \underset{b_N,\gamma_N}{min}$$
+	
+	
+	
+\end{frame}
+
+\begin{frame}\frametitle{Функция алгоритма}
+	
+	Какие числа $s_1,\ldots, s_l$ надо выбрать для решения следующей задачи?
+	
+	$$\sum_{i=1}^{l} L\left(y_i, a_{N-1}(x_i) +s_i\right)\rightarrow \underset{s_1,\ldots, s_l}{min}$$
+	
+	\begin{itemize}
+		\item    $s_i = y_i - a_{N-1}(x_i)$ 
+		
+		\item    $s_i = - \left. \frac{\partial L}{\partial z} \right|_{z=a_{N-1}(x_i)}$		
+	\end{itemize}
+
+\vspace{0.1cm}
+	
+В этом случае сдвиг $s_i$ будет противоположен производной функции потерь в точке $z=a_{N-1}(x_i)$
+
+
+
+\end{frame}
+
+\begin{frame}\frametitle{Проблемы градиентного бустинга}
+	
+	\begin{itemize}
+		\item Если базовые алгоритмы очень простые, то они плохо приближают вектор антиградиента.  Соответственно, градиентный бустинг может свестись к случайному блужданию в	пространстве.
+		\item Если базовые алгоритмы сложные, то они способны за несколько шагов бустинга идеально подогнаться под обучающую выборку.
+		
+		Решение:
+		
+		\begin{itemize}
+			\item Сокращение шага
+			
+			$a_N(x) = a_{N-1}(x) + \eta\gamma_Nb_N(x)$, где $\eta \in (0,1]$ --- темп обучения.
+			\item Стохастический градиентный бустинг
+		\end{itemize}
+		
+		
+		
+	\end{itemize}
+	
+\end{frame}
+
+\begin{frame}\frametitle{Градиентный бустинг над деревьями}
+	
+	$$b_n(x) = \sum_{j=1}^{J_n} b_{nj}[x\in R_j],$$ 
+	
+	где $j=1,\ldots,J_n$ --- индексы листьев, $R_{j}$ --- соответствующие области разбиения, $b_{nj}$ --- значения в листьях.
+	
+	\vspace{0.1cm}
+	
+	В $N$-й итерации бустинга композиция обновляется как
+	
+	$a_N(x) = a_{N-1}(x) + \gamma_N \sum\limits_{j=1}^{J_N}b_{Nj}[x\in R_j]$
+	
+	\vspace{0.1cm}
+	
+	Можно улучшить качество композиции:
+	$\sum\limits_{i=1}^{l} L\left(y_i,a_{N-1}(x_i) + \sum_{j=1}^{J_N} \gamma_{Nj}[x\in R_j]\right) \rightarrow \underset{\left\{\gamma_{Nj}\right\}^{J_N}_{j=1}}{min}$
+	
+\end{frame}
+
+\begin{frame}\frametitle{Градиентный бустинг над деревьями }
+	
+	Так как области разбиения $R_j$ не пересекаются, данная задача распадается на $J_N$ независимых подзадач:
+	
+	\vspace{0.1cm}
+	
+	$$\gamma_{Nj} = \underset{\gamma}{argmin} \sum_{x_i \in R_j} L(y_i, a_{N-1}(x_i) + \gamma), \qquad j=1,\ldots, J_N$$
+	
+	
+	
+\end{frame}
+
+
+\begin{frame}{XGBoost}
+	
+	Имеем вектор сдвигов, который показывает, как нужно скорректировать ответы композиции на
+	обучающей выборке, чтобы как можно сильнее уменьшить ошибку:
+	
+	$$\left(\left. -\frac{\partial L}{\partial z}\right|_{z=a_{N-1}(x_i)}\right)^l_{i=1} = -\bigtriangledown_z \sum\limits_{i=1}^{l}\left. L(y_i,z_i) \right|_{z=a_{N-1}(x_i)}$$
+	
+	После этого новый базовый алгоритм обучается путем минимизации среднеквадратичного отклонения от вектора сдвигов $s$
+	
+	\begin{equation}\label{bnx}
+		b_N(x) = \underset{b\in\mathbf{A}}{argmin}\sum\limits_{i=1}^{l} (b(x_i) - s_i)^2
+	\end{equation}
+	
+\end{frame}
+
+\begin{frame}{Альтернативный подход}
+	Мы хотим найти алгоритм $b(x)$, решающий следующую задачу:
+	
+	$$\sum\limits_{i=1}^{l} L \left(y_i, a_{N-1}(x_i) + b(x_i)\right) \rightarrow \underset{b}{min}$$
+	
+	Разложим функцию $L$ в каждом слагаемом в ряд Тейлора до второго члена с центром
+	в ответе композиции $a_{N-1}(x_i)$:
+	
+	$\sum\limits_{i=1}^{l} L \left(y_i, a_{N-1}(x_i) + b(x_i)\right) \approx$ 
+	
+	$\approx \sum\limits_{i=1}^{l}\left( L \left(y_i, a_{N-1}(x_i)\right) - s_i b(x_i) + \frac{1}{2} h_i b^2(x_i)\right)$,
+	
+	\vspace{0.1cm}
+	
+	где  $h_i$ --- вторые производные по сдвигам: 
+	
+	\vspace{0.1cm}
+	
+	$h_i = \frac{\partial ^2}{\partial z^2} L(y_i,z)|_{a_{N-1}(x_i)}$
+\end{frame}
+
+\begin{frame}{Альтернативный подход}
+	Так как первое слагаемое не зависит от нового базового алгоритма, то его можно
+	выкинуть:
+	
+	\begin{equation}\label{func}
+		\sum\limits_{i=1}^{l}\left(  - s_i b(x_i) + \frac{1}{2} h_i b^2(x_i)\right)
+	\end{equation}
+	
+	Преобразуем среднеквадратичный функционал из формулы (\ref{bnx}):
+	
+	
+	$$\sum\limits_{i=1}^{l} (b(x_i) - s_i)^2 = 2\sum\limits_{i=1}^{l} (-s_i b(x_i) + \frac{1}{2} b^2(x_i)) \rightarrow \underset{b}{min}$$
+	
+\end{frame}
+
+\begin{frame}{Регуляризация}
+	Будем далее работать с функционалом (\ref{func}). Дерево $b(x)$ можно описать формулой
+	
+	$b(x) = \sum\limits_{j=1}^{J} b_j  \left[x \in R_j \right]$
+	
+	Его сложность зависит от двух показателей:
+	
+	\begin{enumerate}
+		\item Число листьев $J$. Чем больше листьев имеет дерево, тем сложнее его разделяющая поверхность, тем больше у него параметров и тем выше риск переобучения.
+		\item Норма коэффициентов в листьях $\left| \left| b \right| \right| ^2_2 = \sum_{j=1}^{J} b^2_j$. Чем сильнее коэффициенты 	отличаются от нуля, тем сильнее данный базовый алгоритм будет влиять на
+		итоговый ответ композиции.
+	\end{enumerate}
+\end{frame}
+
+\begin{frame}{Регуляризация}
+	Добавляя регуляризаторы, штрафующие за оба этих вида сложности, получаем следующую задачу:
+	
+	$\sum\limits_{i=1}^{l} (-s_i b(x_i) + \frac{1}{2} b^2(x_i)) + \gamma J + \frac{\lambda}{2}\sum\limits_{j=1}^{J}b^2_j \rightarrow \underset{b}{min}$
+	
+	Так как дерево $b(x)$ дает одинаковые ответы на объектах, попадающих в один лист, то можно упростить функционал:
+	
+	$$\sum\limits_{j=1}^{J} \left\{\underbrace{\left(-\sum\limits_{i\in R_j} s_i\right)}_{=-S_j}b_j + \frac{1}{2} 
+	\left(\lambda + \underbrace{\sum\limits_{i\in R_j} h_i}_{=H_j}\right)b^2_j + \gamma\right\} \rightarrow \underset{b}{min}$$
+\end{frame}
+
+\begin{frame}{Регуляризация}
+	Можно аналитически найти оптимальные коэффициенты в листьях:
+	
+	$b_j = \frac{S_j}{H_j + \lambda}$ 
+	
+	Подставляя данное выражение обратно в функционал, получаем, что ошибка дерева с оптимальными коэффициентами в листьях вычисляется по формуле
+	
+	\begin{equation}
+		H(b) = -\frac{1}{2} \sum\limits_{j=1}^{J} \frac{S^2_j}{H_j + \lambda} + \gamma J
+	\end{equation} --- Критерий качества структуры дерева
+\end{frame}
+
+\begin{frame}{Обучение решающего дерева}
+	Мы получили функционал $H(b)$, который для заданной структуры дерева вычисляет минимальное значение ошибки (\ref{func}), которую можно получить путем подбора коэффициентов в листьях.  Будем	выбирать разбиение $[x_j < t]$ в вершине $R$ так, чтобы оно решало следующую задачу 	максимизации:
+	
+	$$Q = H(R) - H(R_l) - H(R_r) \rightarrow max$$
+	
+	где информативность вычисляется по формуле
+	
+	$$H(R) = - \frac{1}{2} \left(\sum\limits_{(h_i,s_i)\in R} s_j\right)^2 \bigg/  \left(\sum\limits_{(h_i,s_i)\in R} h_j + \lambda\right)  +\gamma$$
+	
+	
+\end{frame}
+
+\begin{frame}{Особенности XGBoost}
+	\begin{enumerate}
+		\item Базовый алгоритм приближает направление, посчитанное с учетом вторых производных функции потерь.
+		\item Функционал регуляризуется --- добавляются штрафы за количество листьев и
+		за норму коэффициентов.
+		\item При построении дерева используется критерий информативности, зависящий
+		от оптимального вектора сдвига.
+	\end{enumerate}
+\end{frame}
+
+
+
+
+
+
+
+
+\begin{frame}\frametitle{Смещение и разброс}
+	
+	В случайных лесах:
+	\begin{itemize}
+		\item Используются глубокие деревья, поскольку от базовых алгоритмов требуется низкое смещение.
+		\item Разброс  устраняется за счёт усреднения ответов различных деревьев.
+	\end{itemize}
+	
+	В бустинге:
+	
+	\begin{itemize}
+		\item Каждый следующий алгоритм понижает ошибку композиции.
+		\item Переобучение при большом количестве базовых моделей.
+		\item Можно понизить смещение моделей, а разброс либо останется таким же, либо увеличится.
+		\item Используются неглубокие решающие деревья.
+	\end{itemize}
+	
+	
+\end{frame}
+
+
+\begin{frame}\frametitle{Функции потерь регрессии}
+	
+		\begin{itemize}
+			\item  $L(y,z)(y - z)^2$ --- Gaussian loss ($L_2$ loss)
+			\item  $L(y,z) = |y-z|$ --- Laplacian loss ($L_1$ loss)
+			\item  $L(y,z) = 
+			\begin{cases}
+				\left(1 - \alpha\right)  \left| y - z \right|  & \left| y - z \right|  \leq 0 \\
+				\alpha  \left| y - z \right|  & \left| y - z \right|  \leq 0
+			\end{cases}, \alpha \in (0,1)$ --- Quantile loss ($L_q$ loss)
+		\end{itemize}
+	
+	
+\end{frame}
+
+\begin{frame}\frametitle{Функции потерь регрессии}
+	
+	\begin{figure}[!ht]
+		\centering
+		\includegraphics[width=0.95\textwidth]{img/reg_loss.png}
+		\caption{Функции потерь регрессии}
+		\label{fig:reg_loss}
+	\end{figure}
+	
+\end{frame}
+
+\begin{frame}\frametitle{Функции потерь классификации}
+	
+	\begin{itemize}
+		\item 	$L(y,z) = log(1+e^{-2yz})$ --- Logistic loss. Ммы штрафуем даже корректно предсказанные метки классов. Оптимизируя эту функцию потерь, мы можем продолжать "раздвигать" классы и улучшать классификатор даже если все наблюдения предсказаны верно. Это самая стандартная и часто используемая функция потерь в бинарной классификации.
+		\item	$L(y,z) = e^{-yz}$ --- Adaboost loss. Эта функция потерь очень похожа на Logistic loss, но имеет более жесткий экспоненциальный штраф на ошибки классификации и используется реже.
+	\end{itemize}
+	
+	
+	
+\end{frame}
+
+\begin{frame}\frametitle{Функции потерь классификации}
+	
+	\begin{figure}[!ht]
+		\centering
+		\includegraphics[width=0.95\textwidth]{img/cla_loss.png}
+		\caption{Функции потерь классификации}
+		\label{fig:cla_loss}
+	\end{figure}
+	
+\end{frame}
+
+\begin{frame}\frametitle{Взвешивание объектов}
+	
+	AdaBoost: $L(y,z)= exp(-yz)$
+	
+	\hfill \break
+	
+	$L(a,X) = \sum\limits_{i=1}^{l} exp\left(-y_i\sum_{n=1}^{N}\gamma_nb_n(x_i)\right)$
+	
+	\hfill \break
+	
+	Компоненты ее антиградиента после $N-1$ итерации:
+	
+	$s_i=\left. -\frac{\partial L(y_i,z)}{\partial z}\right|_z=a_{N-1}(x_i)$ $=y_i\underbrace{exp\left(-y_i\sum_{n=1}^{N-1}\gamma_nb_n(x_i)\right)}_{w_i}$
+	
+	
+\end{frame}
+
+\begin{frame}\frametitle{Влияние шума на обучение}
+	
+	Рассмотрим теперь логистическую функцию потерь, которая также может использоваться в задачах классификации:
+	
+	$L(a,X^l) = \sum\limits_{i=1}^{l}log(1+exp(y_ia(x_i)))$
+	
+	\hfill \break
+	
+	Ее антиградиент после $N-1$ шага:
+	
+	$s_i = y_i \underbrace{\frac{1}{1+exp(y_ia_{N-1}(x_i))}}_{w_i^{(N)}}$
+	
+	
+\end{frame}
+
+
+
+
+
+
+\end{document}
