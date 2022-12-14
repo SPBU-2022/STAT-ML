@@ -1,0 +1,344 @@
+% !TEX encoding = windows-1251
+% !TEX program = pdflatex
+\documentclass{beamer}
+\usepackage[english,russian]{babel}
+\usepackage[cp1251]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage{graphicx}
+
+\usepackage{color}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+%\usepackage[center]{caption}
+%\usepackage{subfigure}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{subcaption}
+\usepackage{bbm}
+\usepackage{mathrsfs}
+\usepackage{tikz}
+
+\usetikzlibrary{positioning}
+
+\newdimen\nodeSize
+\nodeSize=4mm
+\newdimen\nodeDist
+\nodeDist=6mm
+
+\tikzset{
+    position/.style args={#1:#2 from #3}{
+        at=(#3.#1), anchor=#1+180, shift=(#1:#2)
+    }
+}
+
+\definecolor{darkgreen}{rgb}{0.01, 0.75, 0.24}
+
+\setbeamertemplate{navigation symbols}{}
+
+\DeclareMathOperator{\Cov}{Cov}
+\DeclareMathOperator{\D}{D}
+\DeclareMathOperator{\E}{E}
+\newtheorem{theorema}{Теорема}
+\newtheorem{lemm}{Лемма}
+%\captionsetup[figure]{position=top}
+%\usepackage{floatrow}
+% Стиль презентации
+%\usetheme[numbers,totalnumbers]{StatMod}
+\usetheme[numbers,totalnumbers,minimal]{Statmod}
+\DeclareMathOperator*{\argmint}{argmin}
+\DeclareMathOperator*{\argmax}{argmax}
+\newcommand{\R}{\mathbb{R}}
+
+\newcommand{\specialcell}[2][c]{%
+  \begin{tabular}[#1]{@{}c@{}}#2\end{tabular}}
+
+
+\title[Deep learning, Neural Nets for images]{Deep learning, Neural Nets for images}  
+\author[В. Попов, Е. Шаповал, Р. Леонович]{\vspace{0.5cm} \\
+             Попов Владимир \\
+             Шаповал Егор\\
+             Леонович Роман 
+              \vspace{1.5cm}}
+%\institute{Санкт-Петербургский государственный университет Прикладная математика и информатика\\ Вычислительная стохастика и статистические модели\\
+% \vspace{0.4cm}
+%    Научный руководитель:   к.ф.-м.н., доцент Алексеева Н. П. \\
+%    Рецензент:  д.ф.-м.н., профессор Кривулин Н. К.
+%    \vspace{0.3cm}}
+    
+\date{Санкт-Петербург\\ 2022 г.} 
+
+\begin{document}
+% Создание заглавной страницы
+%\frame{\titlepage} 
+% Автоматическая генерация содержания
+%\frame{\frametitle{Введение}\tableofcontents} 
+
+%\begin{frame}
+%\begin{tikzpicture}[>=latex,line join=bevel,]
+%%%
+%\node (Moscow) at (5bp,51bp) [draw,ellipse] {Москва};
+%  \node (SPb) at (5bp,5bp) [draw,ellipse] {Санкт-Петербург};
+%  \draw [->] (Moscow) ..controls (5bp,39.554bp) and (5bp,29.067bp)  .. (SPb);
+%%
+%\end{tikzpicture}
+%\end{frame}
+
+\begin{frame}
+  % создаём титульный лист
+  \maketitle
+\end{frame}
+
+\begin{frame}{Свёрточная нейронная сеть}
+	\begin{definition}
+		Изображение~--- тензор $M\in\mathbb R^{m\times n\times d}$, $m$~--- ширина изображения, $n$~--- длина. Чаще всего $d=3$ (3 канала~--- Red, Green, Blue).
+	\end{definition}
+	Пусть $X \in\mathbb R^{m\times n\times d}$~--- случайная величина "изображение".
+	
+	Задачи:
+	\begin{itemize}
+		\item Классификация $f:X\to\{1,\ldots,K\}$, $K$~--- число классов
+		\item Сегментация $f:X\to Y$, $Y\in[0,1]^{m\times n}$, $Y_{ij}=\Prob(X_{ij}\in\text{segment})$		
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Свёртка изображений}
+
+	
+	\begin{definition}
+		Рассмотрим $M\in\mathbb{R}^{m\times n}$~--- изображение по одному из каналов, $K\in\mathbb R^{k\times l}$~--- ядро, \textit{свёрткой изображения относительно отображения $h:\mathbb{R}^{m\times n}\times\mathbb R^{k\times l}\to\mathbb R$ называется функция $*$}, рассмотрим $h(\mathbf X,\mathbf Y)=\sum\limits_{a=1}^k\sum\limits_{i=1}^l X_{ij}Y_{ij}$, $(M*K)(i,j)=\sum\limits_{a=1}^k\sum\limits_{b=1}^l M_{i+a,j+b}K_{ab}$. $(M*K)\in\mathbb R^{(m-k+1)\times(n-l+1)}$
+	\end{definition}
+	
+	Можем заполнить как-нибудь края чтобы результат свёртки имел размерность $m\times n$ (padding).
+\end{frame}
+
+\begin{frame}{Свёртка наглядно}
+	\includegraphics[width=\textwidth]{conv.png}
+\end{frame}
+
+\begin{frame}{Свёрточный слой}
+	Сверточный слой CNN задаётся следующими параметрами:
+		\begin{itemize}
+			\item Размер фильтра $k\times l\times r$, $k\leq m$, $l\leq n$, $r\leq d$.
+			\item Способ заполнения краёв (padding), например можно заполнить нулями, равносильно окаймлением изображения чёрной рамкой. Есть другие способы: max, reflect, replicate.
+			\item Размер заполнения краёв $P\in \mathbb R^d$.
+			\item Величина сдвига ядра (stride) $S\in R^3$. При $S=(1,1,1)$ получаем операцию, похожую на операцию вложения в SSA.
+		\end{itemize}
+		
+	На выходе получаем тензор размерности $m_1\times n_1\times d_1$, после этого применяем к полученным элементам функцию активации.
+\end{frame}
+
+\begin{frame}{Pooling слой}
+	Pooling операцию можно понимать как свёртку с $S=(k,l,d)$. Основная цель pooling~--- уменьшение размерности изображения. Часто используют max-pooling, иногда применяют sum-pooling, average-pooling
+	\includegraphics[width=\textwidth]{maxpool.jpeg}
+ 
+\end{frame}
+\begin{frame}{Свёрточная нейронная сеть}
+	В зависимости от постановки задачи после применения свёрточных и pooling слоёв и применения функций активации могут следовать полносвязные или свёрточные  слои.
+	\includegraphics[width=\textwidth]{lesnet.png}
+\end{frame}
+
+\begin{frame}{Backpropogation}
+	В случае отсутствия max-pooling слоёв применим алгоритм обратного распространения ошибки. Если присутствуют max-pooling слои, то градиенты пробрасываются в ту клетку, на которой достигается максимум, остальные градиенты равны нулю.
+	
+	В примере ненулевые градиенты будут в точках $(2,2), (2,4), (3,1), (4,4)$.
+	\includegraphics[width=\textwidth]{maxpool.jpeg}
+\end{frame}
+
+\begin{frame}{Augumentation}
+	\begin{definition}
+		Аугументация (Augumentation)~--- увеличение объёма тренировочной выборки с помощью различных афинных преобразований изображений: зеркальное отражение, поворот, сдвиг, изменение масштаба.
+	\end{definition}
+	Используется для борьбы с переобучением.
+	\begin{center}
+	
+
+	\includegraphics[width=0.8\textwidth]{aug.png}
+	\end{center}
+\end{frame}
+
+\begin{frame}{Inception}
+	Проблема: непонятно какой размер ядра на каждом слое будет давать минимальную ошибку
+	
+	Решение: Рассмотрим разные комбинации свёрток и pooling слоёв, а затем сконкатенируем их
+	
+	\includegraphics[width=\textwidth]{inception.png}
+\end{frame}
+
+\begin{frame}{Dropout (только для полносвязанных сетей)}
+	\begin{definition}
+		Dropout~--- отключение (зануление) случайных нейронов во время обучения нейросети. Параметр $p$~--- доля отключаемых нейронов. Оставшимся ненулевым нейронам присваиваем вес, равный $\frac1{1-p}$. 
+	\end{definition}
+	Цель: борьба с переобучением
+	\includegraphics[width=0.9\textwidth]{drop.png}
+\end{frame}
+\begin{frame}{Практические проблемы}
+	Проблемы:
+		\begin{itemize}
+			\item Необходимость разметки данных для обучения
+			\item Большое количество параметром, следовательно долгое обучение, даже на GPU
+		\end{itemize}
+	Решения:
+		\begin{itemize}
+			\item Использование размеченных библиотек изображений: Imagenet (14M изображений, 1000 категорий), OpenImages (9М изображений, 60К меток, 20К категория)
+			\item Использование предобученной модели (Alexnet, vgg net, Resnet) 
+		\end{itemize}
+\end{frame}
+
+\begin{frame}{vgg16}
+	\includegraphics[width=\textwidth]{vgg16.png}
+\end{frame}
+
+
+
+\begin{frame}{GAN --- Порождающие состязательные сети}
+	\begin{itemize}
+		\item Увеличение разрешения изображений.
+		\item Преобразование текста в изображение.
+		\item Раскрашивание изображений.
+		\item Генерация большего количества данных и заполнение пробелов в них.
+	\end{itemize}
+	 \includegraphics[width=\textwidth]{img/gan_1.png}
+\end{frame}
+
+
+\begin{frame}{GAN. Генератор}
+	Цель генератора: Сгенерировать такие данные, чтобы дискриминатор не отличил их от реальных.
+	
+	Цель дискриминатора: Определить, входные данные реальны, или были сгенерированы искусственно.
+	
+	\begin{figure}
+		\includegraphics[width=\textwidth]{img/generator.png}
+		\caption {Генератор}
+	\end{figure}
+\end{frame}
+
+
+
+\begin{frame}{Постановка задачи}
+	\begin{itemize}
+		\item $X \in \mathbb{R}$ --- Набор данных;
+	
+		\item $p_g$ --- Вероятностное распределение генератора;
+	
+		\item $p_z(z)$ --- Априорная вероятность шума;
+	
+		\item $G(z,\gamma_g)$ --- Генератор, где $G$ многослойный перцептроном с параметром $\gamma_g$;
+	
+		\item $D(z,\gamma_d)$ --- Дискриминатор, который на выход подает вероятность того, что $x$ пришло из тренировочных данных, а не $p_g$.
+	\end{itemize}
+	
+	Задача:
+	
+	$$\underset{G}{\min} \underset{D}{\max} V\left(D,G\right) = \underset{x\sim p_{data}}{ \mathbb{E}} \left[\log D(x)\right] + \underset{z\sim p_z}{ \mathbb{E}} \left[\log\left(1-D\left(G(z)\right)\right)\right]$$
+	 
+\end{frame}
+
+\begin{frame}[fragile]{Алгоритм обучения}
+		
+	\begin{enumerate}
+		\item Получаем мини-батч ${z_1,...,z_m}$ из распределения $p_z$,
+		\item Получаем мини-батч ${x_1,...,x_m}$ из распределения $p_{data}$
+		\item Обновляем дискриминатор в сторону возрастания его градиента $$ d_w \leftarrow \nabla_{\gamma_d} \frac{1}{m} \sum\limits_{t=1}^{m}\left[\log D(x_t)\right] +  \left[\log\left(1-D\left(G(z_t)\right)\right)\right]$$
+		\item Повторяем шаги 1-3 $k$ раз.
+		\item Получаем мини-батч ${z_1,...,z_m}$ из распределения $p_z$
+		\item Обновляем генератор в сторону убывания его градиента $$ g_w \leftarrow \nabla_{\gamma_d} \frac{1}{m} \sum\limits_{t=1}^{m} \left[\log\left(1-D\left(G(z_t)\right)\right)\right] $$ 
+	\end{enumerate}
+
+\end{frame}
+
+\begin{frame}{Проблемы обучения GAN}
+	\begin{itemize}
+		\item Генератор  выдает ограниченное количество разных образцов.
+		\item Параметры модели дестабилизируются и не сходятся.
+		\item Дискриминатор становится слишком сильным, а градиент генератора исчезает и обучение не происходит.
+		\item Выявление корреляции в признаках, не связанных (слабо связанных) в реальном мире.
+		\item Высокая чувствительность к гиперпараметрам.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{CGAN}
+	
+	$y$ --- Дополнительное условие для генератора и дискриминатора (Метка класса, изображение или данные из других моделей)
+	
+	$$\underset{G}{\min} \underset{D}{\max} V\left(D,G\right) = \underset{x\sim p_{data}}{ \mathbb{E}} \left[\log D(x|y)\right] + \underset{z\sim p_z}{ \mathbb{E}} \left[\log\left(1-D\left(G(z|y)\right)\right)\right]$$
+	
+	\begin{center}
+		\includegraphics[width=0.7\textwidth]{img/cgan.png}
+	\end{center}
+	
+\end{frame}
+
+\begin{frame}{StackGAN, Stage-I}
+	\begin{itemize}
+		\item Conditioning Augmentation --- $\mathcal{N}\left(\mu(\phi_t), \Sigma(\phi_t)\right)$, где $t$ ---
+	текстовое описание, а $\phi_t$ --- векторное представление 
+	
+		\item Регуляризация: $r = D_{KL} \left(\mathcal{N}\left(\mu(\phi_t), \Sigma(\phi_t)\right)||\mathcal{N}\left(0, I\right)\right)$
+		
+		\item Тренировка дискриминатора $D_0$ и генератора $G_0$:
+		
+		\vspace{0.1cm}
+		
+		$ L_{D_0} =  \mathbb{E}_{\left(I_0, t\right)\sim p_{data}} \left[\log D_0 \left(I_0,\phi_t\right)\right] + E_{z\sim t, t\sim p_{data}} \left[\log \left(1- D_0\left(G_0(z,\hat{c_0}), \phi_t\right)\right)\right] $
+		
+		\vspace{0.2cm}
+		
+		$ L_{G_0} =  \mathbb{E}_{z\sim t, t\sim p_{data}} \left[\log \left(1- D_0\left(G_0(z,\hat{c_0}), \phi_t\right)\right)\right] + \lambda r $,
+		
+		где реальное изображение $I_0$ и описание текста $t$ берутся из реального распределения данных $p_{data}$, $z$ --- шумовой вектор.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{StackGAN, Stage-II}
+	
+	$$ L_{D} = \mathbb{E}_{\left(I, t\right)\sim p_{data}} [\log D (I,\phi_t)] +  \mathbb{E}_{s_0\sim p_{C_0}, t\sim p_{data}} [\log (1- D(G(s_0,\hat{c}), \phi_t))] $$
+	
+	$$  L_{G} =   \mathbb{E}_{s_0\sim p_{C_0}, t\sim p_{data}}  \left[\log \left(1- D\left(G(s_0,\hat{c}), \phi_t\right)\right)\right] + \lambda r ,$$
+	
+	где $s_0 = G_0\left(z, \hat{c_0}\right)$ --- результат работы генератора Stage-I GAN.
+	
+	\begin{center}
+		\includegraphics[width=1\textwidth]{img/stackgan.jpg}
+	\end{center}
+	
+\end{frame}
+
+\begin{frame}{LAPGAN}
+	\begin{itemize}
+		\item Пусть $d(\cdot)$ --- операция сжатия изображения размера $j\times j$ так, что новое изображение $d(I)$ имеет размеры $j/2 \times j/2$
+		\item $u(\cdot)$ --- операция расширения такая, что $u(I)$ имеет размеры $2j \times 2j$.
+	\end{itemize}
+	
+	Тогда пирамида гауссианов имеет вид $\mathcal{G}(I) = \left[I_0,I_1,\ldots, I_k\right]$, где $I_0 = I$, и $I_k$ представляет собой $k$ раз выполненное применение $d(\cdot)$.
+	
+	Коэффициенты $h_k$ на каждом уровне пирамиды: $$h_k = \mathcal{L}_k(I) = \mathcal{G}_k(I) - u(\mathcal{G}_{k+1}(I)) = I_k - u\left(I_{k+1}\right)$$
+\end{frame}
+
+\begin{frame}{Unpooling}
+Cохраняем позиции, где достигается максимум и используем их в unpooling слое.
+	\begin{center}
+		\includegraphics[width=0.7\textwidth]{img/unpool.png}
+	\end{center}
+\end{frame}
+
+\begin{frame}{Segnet}
+	\begin{center}
+		\includegraphics[width=1\textwidth]{img/segnet.png}
+	\end{center}
+\end{frame}
+
+\begin{frame}{Vanilla Unet} 
+	\begin{center}
+		\includegraphics[width=1\textwidth]{img/vanila.png}
+	\end{center}
+\end{frame}
+
+\end{document}

@@ -1,0 +1,11 @@
+\frametitle{Алгоритм обучения}
+
+	\begin{enumerate}
+		\item Получаем мини-батч ${z_1,...,z_m}$ из распределения $p_z$,
+		\item Получаем мини-батч ${x_1,...,x_m}$ из распределения $p_{data}$
+		\item Обновляем дискриминатор в сторону возрастания его градиента $$ d_w \leftarrow \nabla_{\gamma_d} \frac{1}{m} \sum\limits_{t=1}^{m}\left[\log D(x_t)\right] +  \left[\log\left(1-D\left(G(z_t)\right)\right)\right]$$
+		\item Повторяем шаги 1-3 $k$ раз.
+		\item Получаем мини-батч ${z_1,...,z_m}$ из распределения $p_z$
+		\item Обновляем генератор в сторону убывания его градиента $$ g_w \leftarrow \nabla_{\gamma_d} \frac{1}{m} \sum\limits_{t=1}^{m} \left[\log\left(1-D\left(G(z_t)\right)\right)\right] $$
+	\end{enumerate}
+
